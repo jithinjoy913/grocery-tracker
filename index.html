@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grocery Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f5f5f5;
+            text-align: center;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            margin: auto;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        button {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: darkred;
+        }
+        .total-cost {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Grocery Tracker</h2>
+        <input type="text" id="item" placeholder="Item Name">
+        <input type="number" id="price" placeholder="Total Price">
+        <input type="number" id="quantity" placeholder="Quantity">
+        <select id="unit">
+            <option value="kg">kg</option>
+            <option value="g">g</option>
+            <option value="l">l</option>
+            <option value="ml">ml</option>
+            <option value="pcs">pcs</option>
+        </select>
+        <input type="date" id="date">
+        <button id="addButton" onclick="addOrUpdateGrocery()">Add Item</button>
+        <input type="hidden" id="editIndex" value="-1">
+
+        <h3>Filter by Date</h3>
+        <input type="date" id="startDate"> to <input type="date" id="endDate">
+        <button onclick="filterGroceries()">Filter</button>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Total Price</th>
+                    <th>Quantity</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="grocery-list">
+                <!-- Items will be added here dynamically -->
+            </tbody>
+        </table>
+
+        <div class="total-cost">Total Cost: ₹<span id="total-cost">0</span></div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadGroceries);
+
+        function addOrUpdateGrocery() {
+            let item = document.getElementById("item").value;
+            let price = document.getElementById("price").value;
+            let quantity = document.getElementById("quantity").value;
+            let unit = document.getElementById("unit").value;
+            let date = document.getElementById("date").value;
+            let editIndex = document.getElementById("editIndex").value;
+            
+            if (!item || !price || !quantity || !date) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            let groceries = JSON.parse(localStorage.getItem("groceries")) || [];
+            
+            if (editIndex === "-1") {
+                groceries.push({ item, price, quantity, unit, date });
+            } else {
+                groceries[editIndex] = { item, price, quantity, unit, date };
+                document.getElementById("editIndex").value = "-1";
+                document.getElementById("addButton").innerText = "Add Item";
+            }
+            
+            localStorage.setItem("groceries", JSON.stringify(groceries));
+            
+            document.getElementById("item").value = "";
+            document.getElementById("price").value = "";
+            document.getElementById("quantity").value = "";
+            document.getElementById("date").value = "";
+            
+            loadGroceries();
+        }
+
+        function loadGroceries() {
+            let groceries = JSON.parse(localStorage.getItem("groceries")) || [];
+            displayGroceries(groceries);
+        }
+
+        function displayGroceries(groceries) {
+            let groceryList = document.getElementById("grocery-list");
+            let totalCost = 0;
+            groceryList.innerHTML = "";
+            
+            groceries.forEach((grocery, index) => {
+                let cost = parseFloat(grocery.price);
+                totalCost += cost;
+                let row = `<tr>
+                    <td>${grocery.item}</td>
+                    <td>₹${grocery.price}</td>
+                    <td>${grocery.quantity} ${grocery.unit}</td>
+                    <td>${grocery.date}</td>
+                    <td>
+                        <button onclick="editGrocery(${index})">Edit</button>
+                        <button onclick="deleteGrocery(${index})">Delete</button>
+                    </td>
+                </tr>`;
+                groceryList.innerHTML += row;
+            });
+            document.getElementById("total-cost").innerText = totalCost.toFixed(2);
+        }
+
+        function filterGroceries() {
+            let startDate = document.getElementById("startDate").value;
+            let endDate = document.getElementById("endDate").value;
+            let groceries = JSON.parse(localStorage.getItem("groceries")) || [];
+            
+            let filteredGroceries = groceries.filter(grocery => {
+                let itemDate = new Date(grocery.date);
+                return (!startDate || itemDate >= new Date(startDate)) &&
+                       (!endDate || itemDate <= new Date(endDate));
+            });
+            
+            displayGroceries(filteredGroceries);
+        }
+
+        function deleteGrocery(index) {
+            let groceries = JSON.parse(localStorage.getItem("groceries")) || [];
+            groceries.splice(index, 1);
+            localStorage.setItem("groceries", JSON.stringify(groceries));
+            loadGroceries();
+        }
+
+        function editGrocery(index) {
+            let groceries = JSON.parse(localStorage.getItem("groceries")) || [];
+            let grocery = groceries[index];
+            
+            document.getElementById("item").value = grocery.item;
+            document.getElementById("price").value = grocery.price;
+            document.getElementById("quantity").value = grocery.quantity;
+            document.getElementById("unit").value = grocery.unit;
+            document.getElementById("date").value = grocery.date;
+            document.getElementById("editIndex").value = index;
+            document.getElementById("addButton").innerText = "Update Item";
+        }
+    </script>
+</body>
+</html>
